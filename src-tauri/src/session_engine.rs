@@ -19,6 +19,8 @@ type OpenSessionRow = (
     String,
     String,
     Option<String>,
+    String,
+    Option<String>,
 );
 
 fn now_ms() -> i64 {
@@ -30,10 +32,11 @@ pub fn get_timer_state(conn: &Connection) -> rusqlite::Result<TimerState> {
         .query_row(
             r#"
             SELECT s.id, s.profile_id, s.task_id, s.status, s.started_at, s.accumulated_seconds, s.running_since,
-                   p.name AS profile_name, s.timezone_mode, s.timezone_id
+                   p.name AS profile_name, s.timezone_mode, s.timezone_id, s.session_type, s.notes
             FROM sessions s
             JOIN profiles p ON p.id = s.profile_id
             WHERE s.status IN ('active', 'paused')
+            ORDER BY CASE WHEN s.status = 'active' THEN 0 ELSE 1 END ASC
             LIMIT 1
             "#,
             [],
@@ -49,6 +52,8 @@ pub fn get_timer_state(conn: &Connection) -> rusqlite::Result<TimerState> {
                     row.get(7)?,
                     row.get(8)?,
                     row.get(9)?,
+                    row.get(10)?,
+                    row.get(11)?,
                 ))
             },
         )
@@ -65,6 +70,8 @@ pub fn get_timer_state(conn: &Connection) -> rusqlite::Result<TimerState> {
         profile_name,
         timezone_mode,
         timezone_id,
+        session_type,
+        session_notes,
     )) = row
     else {
         return Ok(TimerState {
@@ -80,6 +87,8 @@ pub fn get_timer_state(conn: &Connection) -> rusqlite::Result<TimerState> {
             running_since: None,
             timezone_mode: None,
             timezone_id: None,
+            session_type: None,
+            session_notes: None,
         });
     };
 
@@ -110,6 +119,8 @@ pub fn get_timer_state(conn: &Connection) -> rusqlite::Result<TimerState> {
         running_since,
         timezone_mode: Some(timezone_mode),
         timezone_id,
+        session_type: Some(session_type),
+        session_notes,
     })
 }
 
@@ -276,5 +287,82 @@ pub fn stop_session(conn: &Connection) -> Result<TimerState, String> {
         running_since: None,
         timezone_mode: None,
         timezone_id: None,
+        session_type: None,
+        session_notes: None,
     })
+}
+
+pub fn start_break(conn: &Connection) -> Result<TimerState, String> {
+    let (work_id, profile_id, status_s): (String, String, String) = conn
+        .query_row(
+            "SELECT id, profile_id, status FROM sessions WHERE status = 'active' AND COALESCE(session_type, 'work') = 'work' LIMIT 1",
+            [],
+            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+        )
+        .map_err(|_| "No active work session to break from".to_string())?;
+    let status = SessionStatus::parse(&status_s).ok_or_else(|| "Invalid session status".to_string())?;
+    fold_running_slice(conn, &work_id, &status).map_err(|e| e.to_string())?;
+    conn.execute(
+        "UPDATE sessions SET status = 'paused' WHERE id = ?1",
+        params![work_id],
+    )
+    .map_err(|e| e.to_string())?;
+
+    let break_id = Uuid::new_v4().to_string();
+    let t = now_ms();
+    conn.execute(
+        "INSERT INTO sessions (id, profile_id, task_id, status, started_at, ended_at, accumulated_seconds, running_since, timezone_mode, timezone_id, session_type, parent_session_id)
+         VALUES (?1, ?2, NULL, 'active', ?3, NULL, 0, ?3, 'auto', NULL, 'break', ?4)",
+        params![break_id, profile_id, t, work_id],
+    )
+    .map_err(|e| e.to_string())?;
+    get_timer_state(conn).map_err(|e| e.to_string())
+}
+
+pub fn end_break(conn: &Connection) -> Result<TimerState, String> {
+    let (break_id, status_s, parent_session_id): (String, String, Option<String>) = conn
+        .query_row(
+            "SELECT id, status, parent_session_id FROM sessions WHERE status IN ('active', 'paused') AND COALESCE(session_type, 'work') = 'break' LIMIT 1",
+            [],
+            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+        )
+        .map_err(|_| "No break session to end".to_string())?;
+    let status = SessionStatus::parse(&status_s).ok_or_else(|| "Invalid session status".to_string())?;
+    fold_running_slice(conn, &break_id, &status).map_err(|e| e.to_string())?;
+    let t = now_ms();
+    conn.execute(
+        "UPDATE sessions SET status = 'completed', ended_at = ?2, running_since = NULL WHERE id = ?1",
+        params![break_id, t],
+    )
+    .map_err(|e| e.to_string())?;
+
+    if let Some(parent_id) = parent_session_id {
+        conn.execute(
+            "UPDATE sessions SET status = 'active', running_since = ?2 WHERE id = ?1",
+            params![parent_id, t],
+        )
+        .map_err(|e| e.to_string())?;
+    }
+    get_timer_state(conn).map_err(|e| e.to_string())
+}
+
+pub fn update_session_notes(conn: &Connection, session_id: &str, notes: Option<String>) -> Result<(), String> {
+    let normalized = notes.and_then(|n| {
+        let trimmed = n.trim();
+        if trimmed.is_empty() {
+            None
+        } else {
+            Some(trimmed.to_string())
+        }
+    });
+    let n = conn
+        .execute(
+            "UPDATE sessions SET notes = ?2 WHERE id = ?1",
+            params![session_id, normalized],
+        )
+        .map_err(|e| e.to_string())?;
+    if n == 0 {
+        return Err("Session not found".to_string());
+    }
+    Ok(())
 }

@@ -30,6 +30,8 @@ export interface TimerState {
   runningSince: number | null;
   timezoneMode: TimezoneMode | null;
   timezoneId: string | null;
+  sessionType: string | null;
+  sessionNotes: string | null;
 }
 
 export interface ProfileDayRow {
@@ -85,6 +87,7 @@ export interface AppPreferences {
   overviewSectionOrder: OverviewSectionId[];
   /** 80–140, default 100. Drives root font scale for the whole UI. */
   uiFontScalePercent: number;
+  appMode: "v1" | "v2";
 }
 
 export interface DailyTotalRow {
@@ -104,6 +107,8 @@ export interface SessionHistoryRow {
   durationSeconds: number;
   timezoneMode: TimezoneMode;
   timezoneId: string | null;
+  sessionType: string;
+  notes: string | null;
 }
 
 export type TodoStatus = "active" | "done" | "removed";
@@ -119,4 +124,9 @@ export interface TodoItem {
   removedAt: number | null;
   lastWorkedOnAt: number | null;
   sortIndex: number;
+}
+
+export interface MaintenanceResult {
+  affectedRows: number;
+  message: string;
 }

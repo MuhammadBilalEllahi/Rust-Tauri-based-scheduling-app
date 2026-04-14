@@ -70,8 +70,14 @@ export function AppShell() {
               <NavLink className={navClass} to="/todos" title="Todos" aria-label="Todos">
                 <span aria-hidden>✓</span>
               </NavLink>
+              <NavLink className={navClass} to="/execute" title="Execute" aria-label="Execute">
+                <span aria-hidden>▶</span>
+              </NavLink>
               <NavLink className={navClass} to="/report" title="Daily report" aria-label="Daily report">
                 <span aria-hidden>▤</span>
+              </NavLink>
+              <NavLink className={navClass} to="/maintenance" title="Maintenance" aria-label="Maintenance">
+                <span aria-hidden>⚙</span>
               </NavLink>
               <div className="icon-rail-spacer" />
               <button

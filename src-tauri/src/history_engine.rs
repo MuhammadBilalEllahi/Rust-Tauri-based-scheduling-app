@@ -46,7 +46,8 @@ pub fn list_sessions(
     let mut sql = String::from(
         r#"
         SELECT s.id, s.profile_id, p.name, s.task_id, t.name, s.started_at, s.ended_at,
-               s.accumulated_seconds, s.running_since, s.status, s.timezone_mode, s.timezone_id
+               s.accumulated_seconds, s.running_since, s.status, s.timezone_mode, s.timezone_id,
+               COALESCE(s.session_type, 'work') AS session_type, s.notes
         FROM sessions s
         JOIN profiles p ON p.id = s.profile_id
         LEFT JOIN tasks t ON t.id = s.task_id
@@ -105,5 +106,7 @@ fn map_session_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<SessionHistoryRo
         ),
         timezone_mode: row.get(10)?,
         timezone_id: row.get(11)?,
+        session_type: row.get(12)?,
+        notes: row.get(13)?,
     })
 }

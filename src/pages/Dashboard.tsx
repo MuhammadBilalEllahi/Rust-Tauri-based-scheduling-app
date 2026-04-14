@@ -135,6 +135,7 @@ export function Dashboard() {
   const [summary, setSummary] = useState<Awaited<ReturnType<typeof api.getDailySummary>> | null>(
     null,
   );
+  const [sessionNotesDraft, setSessionNotesDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
   const { format, displaySeconds } = useSessionTimer(timer);
 
@@ -251,6 +252,10 @@ export function Dashboard() {
   }, [selectedProfileId]);
 
   useEffect(() => {
+    setSessionNotesDraft(timer?.sessionNotes ?? "");
+  }, [timer?.sessionId, timer?.sessionNotes]);
+
+  useEffect(() => {
     const id = window.setInterval(
       () => setCurrentClock(formatCurrentClock(Boolean(preferences?.showMilliseconds))),
       preferences?.showMilliseconds ? 100 : 1000,
@@ -326,6 +331,37 @@ export function Dashboard() {
     }
   }
 
+  async function onStartBreak() {
+    try {
+      setError(null);
+      setTimer(await api.startBreak());
+    } catch (e) {
+      setError(mapSessionError(String(e)));
+    }
+  }
+
+  async function onEndBreak() {
+    try {
+      setError(null);
+      setTimer(await api.endBreak());
+    } catch (e) {
+      setError(mapSessionError(String(e)));
+    }
+  }
+
+  async function onSaveSessionNotes() {
+    if (!timer?.sessionId) {
+      return;
+    }
+    try {
+      setError(null);
+      await api.updateSessionNotes(timer.sessionId, sessionNotesDraft.trim() || null);
+      setTimer((prev) => (prev ? { ...prev, sessionNotes: sessionNotesDraft.trim() || null } : prev));
+    } catch (e) {
+      setError(mapSessionError(String(e)));
+    }
+  }
+
   const needProfileHint =
     visibleProfiles.length > 0 && !selectedProfileId && !hasSession && !isActive && !isPaused;
   const profileRows = summary?.profiles.filter((profile) => profile.actualMinutes > 0) ?? [];
@@ -393,7 +429,9 @@ export function Dashboard() {
               {format(Boolean(preferences?.showMilliseconds))}
             </div>
             <p className="timer-state-line">
-              <span>{isActive ? "Running" : isPaused ? "Paused" : "Idle"}</span>
+              <span>
+                {timer?.sessionType === "break" ? "Break" : isActive ? "Running" : isPaused ? "Paused" : "Idle"}
+              </span>
               {" · "}
               <span>{isQuickSessionActive ? "Quick Session" : timer?.profileName ?? "No profile"}</span>
               {" · "}
@@ -431,6 +469,29 @@ export function Dashboard() {
               >
                 ■
               </button>
+              {timer?.sessionType === "break" ? (
+                <button
+                  className="btn btn-end-break"
+                  type="button"
+                  disabled={!hasSession}
+                  onClick={onEndBreak}
+                  title="End break"
+                  aria-label="End break"
+                >
+                  End Break
+                </button>
+              ) : (
+                <button
+                  className="btn btn-break"
+                  type="button"
+                  disabled={!isActive || timer?.sessionType !== "work"}
+                  onClick={onStartBreak}
+                  title="Start break"
+                  aria-label="Start break"
+                >
+                  Break
+                </button>
+              )}
             </div>
             {!hasSession ? (
               <button
@@ -485,6 +546,19 @@ export function Dashboard() {
                 </select>
               </div>
             </div>
+            {hasSession ? (
+              <label className="field" style={{ marginBottom: 0 }}>
+                <span>Session note</span>
+                <textarea
+                  className="input session-notes-field"
+                  rows={2}
+                  value={sessionNotesDraft}
+                  onChange={(e) => setSessionNotesDraft(e.target.value)}
+                  onBlur={() => void onSaveSessionNotes()}
+                  placeholder="Optional note for this session..."
+                />
+              </label>
+            ) : null}
           </>
         );
       case "today":
@@ -614,6 +688,22 @@ export function Dashboard() {
                   }
                 />
                 <span>Show milliseconds</span>
+              </label>
+              <label className="field" style={{ marginBottom: 0, flex: "1 1 140px" }}>
+                <span>App mode</span>
+                <select
+                  className="select"
+                  value={preferences.appMode}
+                  onChange={(e) =>
+                    void updatePreferences({
+                      ...preferences,
+                      appMode: e.target.value === "v2" ? "v2" : "v1",
+                    })
+                  }
+                >
+                  <option value="v1">V1 - Flexible</option>
+                  <option value="v2">V2 - Execution</option>
+                </select>
               </label>
             </div>
             <label className="field" style={{ marginBottom: 0 }}>

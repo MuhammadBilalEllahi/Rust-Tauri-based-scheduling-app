@@ -6,6 +6,7 @@ import type {
   Profile,
   SessionHistoryRow,
   Task,
+  MaintenanceResult,
   TimerState,
   TodoItem,
 } from "../types";
@@ -87,6 +88,20 @@ export async function resumeSession(): Promise<TimerState> {
 
 export async function stopSession(): Promise<TimerState> {
   return invoke("stop_session");
+}
+
+export async function startBreak(): Promise<TimerState> {
+  return invoke("start_break");
+}
+
+export async function endBreak(): Promise<TimerState> {
+  return invoke("end_break");
+}
+
+export async function updateSessionNotes(sessionId: string, notes: string | null): Promise<void> {
+  return invoke("update_session_notes", {
+    input: { sessionId, notes },
+  });
 }
 
 export async function getDailySummary(date: string): Promise<DailySummary> {
@@ -173,4 +188,35 @@ export async function toggleTodoDone(id: string, done: boolean): Promise<TodoIte
 
 export async function removeTodo(id: string): Promise<TodoItem> {
   return invoke("remove_todo", { id });
+}
+
+export async function clearPreferences(): Promise<MaintenanceResult> {
+  return invoke("clear_preferences");
+}
+
+export async function clearTimerState(): Promise<MaintenanceResult> {
+  return invoke("clear_timer_state");
+}
+
+export async function repairBreakSessions(): Promise<MaintenanceResult> {
+  return invoke("repair_break_sessions");
+}
+
+export async function deleteSessionsInRange(
+  startDate: string,
+  endDate: string,
+): Promise<MaintenanceResult> {
+  return invoke("delete_sessions_in_range", { input: { startDate, endDate } });
+}
+
+export async function deleteAllSessions(): Promise<MaintenanceResult> {
+  return invoke("delete_all_sessions");
+}
+
+export async function deleteAllTodos(): Promise<MaintenanceResult> {
+  return invoke("delete_all_todos");
+}
+
+export async function fullResetAllData(): Promise<MaintenanceResult> {
+  return invoke("full_reset_all_data");
 }

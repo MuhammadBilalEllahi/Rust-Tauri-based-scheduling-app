@@ -122,6 +122,23 @@ pub fn migrate(conn: &Connection) -> rusqlite::Result<()> {
             )?;
         }
         conn.execute_batch("PRAGMA user_version = 2;")?;
+        version = 2;
+    }
+
+    if version < 3 {
+        if !has_column(conn, "sessions", "session_type")? {
+            conn.execute(
+                "ALTER TABLE sessions ADD COLUMN session_type TEXT NOT NULL DEFAULT 'work'",
+                [],
+            )?;
+        }
+        if !has_column(conn, "sessions", "parent_session_id")? {
+            conn.execute("ALTER TABLE sessions ADD COLUMN parent_session_id TEXT", [])?;
+        }
+        if !has_column(conn, "sessions", "notes")? {
+            conn.execute("ALTER TABLE sessions ADD COLUMN notes TEXT", [])?;
+        }
+        conn.execute_batch("PRAGMA user_version = 3;")?;
     }
 
     Ok(())

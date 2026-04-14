@@ -4,7 +4,11 @@ use tauri::{AppHandle, State};
 use crate::app_prefs;
 use crate::companion_window;
 use crate::history_engine;
-use crate::models::{DailySummary, DailyTotalRow, Profile, SessionHistoryRow, Task, TimerState, Todo};
+use crate::maintenance_engine;
+use crate::models::{
+    DailySummary, DailyTotalRow, MaintenanceResult, Profile, SessionHistoryRow, Task, TimerState,
+    Todo,
+};
 use crate::preferences::{self, AppPreferences};
 use crate::profile_manager;
 use crate::quick_profile;
@@ -115,6 +119,20 @@ pub struct ListTodosInput {
     pub include_removed: Option<bool>,
 }
 
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateSessionNotesInput {
+    pub session_id: String,
+    pub notes: Option<String>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DateRangeInput {
+    pub start_date: String,
+    pub end_date: String,
+}
+
 #[tauri::command]
 pub fn list_profiles(state: State<'_, AppState>) -> Result<Vec<Profile>, String> {
     let conn = state.db.lock().map_err(|e| e.to_string())?;
@@ -211,6 +229,27 @@ pub fn resume_session(state: State<'_, AppState>) -> Result<TimerState, String> 
 pub fn stop_session(state: State<'_, AppState>) -> Result<TimerState, String> {
     let conn = state.db.lock().map_err(|e| e.to_string())?;
     session_engine::stop_session(&conn)
+}
+
+#[tauri::command]
+pub fn start_break(state: State<'_, AppState>) -> Result<TimerState, String> {
+    let conn = state.db.lock().map_err(|e| e.to_string())?;
+    session_engine::start_break(&conn)
+}
+
+#[tauri::command]
+pub fn end_break(state: State<'_, AppState>) -> Result<TimerState, String> {
+    let conn = state.db.lock().map_err(|e| e.to_string())?;
+    session_engine::end_break(&conn)
+}
+
+#[tauri::command]
+pub fn update_session_notes(
+    state: State<'_, AppState>,
+    input: UpdateSessionNotesInput,
+) -> Result<(), String> {
+    let conn = state.db.lock().map_err(|e| e.to_string())?;
+    session_engine::update_session_notes(&conn, &input.session_id, input.notes)
 }
 
 #[tauri::command]
@@ -319,4 +358,49 @@ pub fn toggle_todo_done(
 pub fn remove_todo(state: State<'_, AppState>, id: String) -> Result<Todo, String> {
     let conn = state.db.lock().map_err(|e| e.to_string())?;
     todo_manager::remove_todo(&conn, &id)
+}
+
+#[tauri::command]
+pub fn clear_preferences(state: State<'_, AppState>) -> Result<MaintenanceResult, String> {
+    let mut conn = state.db.lock().map_err(|e| e.to_string())?;
+    maintenance_engine::clear_preferences(&mut conn)
+}
+
+#[tauri::command]
+pub fn clear_timer_state(state: State<'_, AppState>) -> Result<MaintenanceResult, String> {
+    let mut conn = state.db.lock().map_err(|e| e.to_string())?;
+    maintenance_engine::clear_timer_state(&mut conn)
+}
+
+#[tauri::command]
+pub fn repair_break_sessions(state: State<'_, AppState>) -> Result<MaintenanceResult, String> {
+    let mut conn = state.db.lock().map_err(|e| e.to_string())?;
+    maintenance_engine::repair_break_sessions(&mut conn)
+}
+
+#[tauri::command]
+pub fn delete_sessions_in_range(
+    state: State<'_, AppState>,
+    input: DateRangeInput,
+) -> Result<MaintenanceResult, String> {
+    let mut conn = state.db.lock().map_err(|e| e.to_string())?;
+    maintenance_engine::delete_sessions_in_range(&mut conn, &input.start_date, &input.end_date)
+}
+
+#[tauri::command]
+pub fn delete_all_sessions(state: State<'_, AppState>) -> Result<MaintenanceResult, String> {
+    let mut conn = state.db.lock().map_err(|e| e.to_string())?;
+    maintenance_engine::delete_all_sessions(&mut conn)
+}
+
+#[tauri::command]
+pub fn delete_all_todos(state: State<'_, AppState>) -> Result<MaintenanceResult, String> {
+    let mut conn = state.db.lock().map_err(|e| e.to_string())?;
+    maintenance_engine::delete_all_todos(&mut conn)
+}
+
+#[tauri::command]
+pub fn full_reset_all_data(state: State<'_, AppState>) -> Result<MaintenanceResult, String> {
+    let mut conn = state.db.lock().map_err(|e| e.to_string())?;
+    maintenance_engine::full_reset_all_data(&mut conn)
 }

@@ -25,6 +25,10 @@ fn default_ui_font_scale_percent() -> i64 {
     100
 }
 
+fn default_app_mode() -> String {
+    "v1".to_string()
+}
+
 fn clamp_ui_font_scale_percent(v: i64) -> i64 {
     v.clamp(UI_FONT_SCALE_MIN, UI_FONT_SCALE_MAX)
 }
@@ -56,6 +60,8 @@ pub struct AppPreferences {
     pub overview_section_order: Vec<String>,
     #[serde(default = "default_ui_font_scale_percent")]
     pub ui_font_scale_percent: i64,
+    #[serde(default = "default_app_mode")]
+    pub app_mode: String,
 }
 
 impl Default for AppPreferences {
@@ -67,6 +73,7 @@ impl Default for AppPreferences {
             history_view_mode: "calendar".to_string(),
             overview_section_order: default_overview_section_order(),
             ui_font_scale_percent: default_ui_font_scale_percent(),
+            app_mode: default_app_mode(),
         }
     }
 }
@@ -114,6 +121,11 @@ pub fn set_preferences(conn: &Connection, input: AppPreferences) -> Result<AppPr
         },
         overview_section_order: sanitize_overview_section_order(input.overview_section_order),
         ui_font_scale_percent: clamp_ui_font_scale_percent(input.ui_font_scale_percent),
+        app_mode: if input.app_mode == "v2" {
+            "v2".to_string()
+        } else {
+            "v1".to_string()
+        },
     };
 
     let raw = serde_json::to_string(&sanitized).map_err(|e| e.to_string())?;

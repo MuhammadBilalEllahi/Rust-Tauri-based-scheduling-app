@@ -55,6 +55,8 @@ pub struct TimerState {
     pub running_since: Option<i64>,
     pub timezone_mode: Option<String>,
     pub timezone_id: Option<String>,
+    pub session_type: Option<String>,
+    pub session_notes: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -111,6 +113,8 @@ pub struct SessionHistoryRow {
     pub duration_seconds: i64,
     pub timezone_mode: String,
     pub timezone_id: Option<String>,
+    pub session_type: String,
+    pub notes: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -126,4 +130,11 @@ pub struct Todo {
     pub removed_at: Option<i64>,
     pub last_worked_on_at: Option<i64>,
     pub sort_index: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MaintenanceResult {
+    pub affected_rows: i64,
+    pub message: String,
 }

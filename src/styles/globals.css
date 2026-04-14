@@ -378,6 +378,17 @@ button {
   background: rgba(255, 108, 108, 0.25);
 }
 
+.btn-break,
+.btn-end-break {
+  background: rgba(231, 167, 67, 0.22);
+  color: color-mix(in srgb, #d68d22 70%, var(--text));
+}
+
+.btn-break:hover:not(:disabled),
+.btn-end-break:hover:not(:disabled) {
+  background: rgba(231, 167, 67, 0.32);
+}
+
 .btn-quick {
   margin: 0 0 12px;
   width: 100%;
@@ -801,6 +812,86 @@ button {
 .todo-title--done {
   text-decoration: line-through;
   color: var(--muted);
+}
+
+.execute-layout {
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
+}
+
+.execute-list-panel,
+.execute-focus-panel {
+  flex: 1 1 0;
+}
+
+.execute-todo-row--active {
+  border-radius: 10px;
+  background: rgba(86, 168, 255, 0.14);
+  box-shadow: 0 0 0 1px var(--accent-ring);
+}
+
+.session-notes-field {
+  min-height: 3.2rem;
+  resize: vertical;
+}
+
+.maintenance-page {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.maintenance-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.maintenance-card--danger {
+  border: 1px solid rgba(255, 108, 108, 0.35);
+}
+
+.maintenance-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.maintenance-confirm-input {
+  max-width: 280px;
+}
+
+.maintenance-btn-danger {
+  background: rgba(255, 108, 108, 0.16);
+  color: color-mix(in srgb, var(--danger) 70%, var(--text));
+}
+
+.maintenance-btn-danger:hover:not(:disabled) {
+  background: rgba(255, 108, 108, 0.26);
+}
+
+.maintenance-status {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  font-size: calc(12 / 14 * 1rem);
+}
+
+.maintenance-status--ok {
+  background: rgba(86, 168, 255, 0.2);
+  color: var(--text);
+}
+
+.maintenance-status--error {
+  background: rgba(255, 108, 108, 0.2);
+  color: #ffd3d3;
+}
+
+@media (max-width: 880px) {
+  .execute-layout {
+    flex-direction: column;
+  }
 }
 
 .overview-clock {

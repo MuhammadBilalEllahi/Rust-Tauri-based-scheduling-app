@@ -6,6 +6,8 @@ import { CompanionLayoutProvider } from "./context/CompanionLayoutContext";
 import { applyUiFontScalePercent } from "./lib/fontScale";
 import { DailyReport } from "./pages/DailyReport";
 import { Dashboard } from "./pages/Dashboard";
+import { ExecutePage } from "./pages/ExecutePage";
+import { MaintenancePage } from "./pages/MaintenancePage";
 import { Profiles } from "./pages/Profiles";
 import { Tasks } from "./pages/Tasks";
 import { TodosPage } from "./pages/TodosPage";
@@ -27,7 +29,9 @@ export default function App() {
             <Route path="profiles" element={<Profiles />} />
             <Route path="tasks" element={<Tasks />} />
             <Route path="todos" element={<TodosPage />} />
+            <Route path="execute" element={<ExecutePage />} />
             <Route path="report" element={<DailyReport />} />
+            <Route path="maintenance" element={<MaintenancePage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

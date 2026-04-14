@@ -7,6 +7,7 @@ mod app_prefs;
 mod commands;
 mod companion_window;
 mod history_engine;
+mod maintenance_engine;
 mod models;
 mod preferences;
 mod profile_manager;
@@ -63,6 +64,9 @@ pub fn run() {
             commands::pause_session,
             commands::resume_session,
             commands::stop_session,
+            commands::start_break,
+            commands::end_break,
+            commands::update_session_notes,
             commands::get_daily_summary,
             commands::set_companion_collapsed,
             commands::set_last_quick_profile,
@@ -77,6 +81,13 @@ pub fn run() {
             commands::update_todo,
             commands::toggle_todo_done,
             commands::remove_todo,
+            commands::clear_preferences,
+            commands::clear_timer_state,
+            commands::repair_break_sessions,
+            commands::delete_sessions_in_range,
+            commands::delete_all_sessions,
+            commands::delete_all_todos,
+            commands::full_reset_all_data,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
