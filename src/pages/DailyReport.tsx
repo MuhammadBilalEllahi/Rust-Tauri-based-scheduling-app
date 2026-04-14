@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import * as api from "../api/tauri";
 import { mapSessionError } from "../lib/sessionErrors";
+import { formatDurationHms } from "../lib/timeFormat";
 import type { DailySummary } from "../types";
 
 function todayIso(): string {
@@ -28,7 +29,7 @@ export function DailyReport() {
   return (
     <div>
       <h1 className="page-heading-soft">Daily report</h1>
-      <p className="page-sub">Actual minutes per profile and task; compare to daily targets.</p>
+      <p className="page-sub">Actual time per profile and task with second precision.</p>
       {error ? <p className="error">{error}</p> : null}
 
       <section className="card" aria-label="Date">
@@ -46,20 +47,24 @@ export function DailyReport() {
 
       {summary ? (
         <>
-          {summary.totalActualMinutes === 0 ? (
+          {summary.totalActualSeconds === 0 ? (
             <div className="empty-panel" style={{ marginBottom: 16 }}>
               No tracked time on this day yet. Start a session from the dashboard when you work.
             </div>
           ) : null}
           <section className="card" aria-label="Summary">
-            <h2 style={{ margin: "0 0 12px", fontSize: 18, fontWeight: 600 }}>Overview</h2>
-            <p style={{ margin: 0, fontSize: 15 }}>
-              Total actual: <strong>{summary.totalActualMinutes} min</strong>
+            <h2 style={{ margin: "0 0 12px", fontSize: "calc(18 / 14 * 1rem)", fontWeight: 600 }}>
+              Overview
+            </h2>
+            <p style={{ margin: 0, fontSize: "calc(15 / 14 * 1rem)" }}>
+              Total actual: <strong>{formatDurationHms(summary.totalActualSeconds)}</strong>
             </p>
           </section>
 
           <section className="card" aria-label="Profiles">
-            <h2 style={{ margin: "0 0 16px", fontSize: 18, fontWeight: 600 }}>By profile</h2>
+            <h2 style={{ margin: "0 0 16px", fontSize: "calc(18 / 14 * 1rem)", fontWeight: 600 }}>
+              By profile
+            </h2>
             <table className="table">
               <thead>
                 <tr>
@@ -89,7 +94,7 @@ export function DailyReport() {
                         {p.profileName}
                       </span>
                     </td>
-                    <td>{p.actualMinutes} min</td>
+                    <td>{formatDurationHms(p.actualSeconds)}</td>
                     <td>{p.targetMinutes != null ? `${p.targetMinutes} min` : "—"}</td>
                     <td>
                       {p.deltaMinutes != null ? (
@@ -117,7 +122,9 @@ export function DailyReport() {
           </section>
 
           <section className="card" aria-label="Tasks">
-            <h2 style={{ margin: "0 0 16px", fontSize: 18, fontWeight: 600 }}>By task</h2>
+            <h2 style={{ margin: "0 0 16px", fontSize: "calc(18 / 14 * 1rem)", fontWeight: 600 }}>
+              By task
+            </h2>
             {summary.tasks.length === 0 ? (
               <p className="muted">No task time for this day.</p>
             ) : (
@@ -134,7 +141,7 @@ export function DailyReport() {
                     <tr key={t.taskId}>
                       <td>{t.taskName}</td>
                       <td className="muted">{t.profileName}</td>
-                      <td>{t.actualMinutes} min</td>
+                      <td>{formatDurationHms(t.actualSeconds)}</td>
                     </tr>
                   ))}
                 </tbody>

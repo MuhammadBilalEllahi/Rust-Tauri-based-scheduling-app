@@ -122,7 +122,7 @@ export function Tasks() {
       </section>
 
       <section className="card" aria-label={editingId ? "Edit task" : "Create task"}>
-        <h2 style={{ margin: "0 0 16px", fontSize: 18, fontWeight: 600 }}>
+        <h2 style={{ margin: "0 0 16px", fontSize: "calc(18 / 14 * 1rem)", fontWeight: 600 }}>
           {editingId ? "Edit task" : "New task"}
         </h2>
         <form onSubmit={onSubmit}>
@@ -151,7 +151,9 @@ export function Tasks() {
       </section>
 
       <section className="card" aria-label="Task list">
-        <h2 style={{ margin: "0 0 16px", fontSize: 18, fontWeight: 600 }}>Tasks for profile</h2>
+        <h2 style={{ margin: "0 0 16px", fontSize: "calc(18 / 14 * 1rem)", fontWeight: 600 }}>
+          Tasks for profile
+        </h2>
         {!profileId ? (
           <p className="muted">Create a profile first.</p>
         ) : tasks.length === 0 ? (

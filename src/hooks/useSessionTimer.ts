@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { formatDurationHms } from "../lib/timeFormat";
 import type { TimerState } from "../types";
 
 function computeDisplaySeconds(state: TimerState | null, nowMs: number): number {
@@ -10,15 +11,6 @@ function computeDisplaySeconds(state: TimerState | null, nowMs: number): number 
     return Math.max(0, state.accumulatedSeconds + delta);
   }
   return state.accumulatedSeconds;
-}
-
-export function formatDuration(totalSeconds: number): string {
-  const s = Math.max(0, Math.floor(totalSeconds));
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const r = s % 60;
-  const pad = (n: number) => n.toString().padStart(2, "0");
-  return `${pad(h)}:${pad(m)}:${pad(r)}`;
 }
 
 export function useSessionTimer(state: TimerState | null) {
@@ -40,5 +32,5 @@ export function useSessionTimer(state: TimerState | null) {
     setTick((t) => t + 1);
   }, []);
 
-  return { displaySeconds, format: () => formatDuration(displaySeconds), refresh };
+  return { displaySeconds, format: (showMilliseconds = false) => formatDurationHms(displaySeconds, { showMilliseconds }), refresh };
 }

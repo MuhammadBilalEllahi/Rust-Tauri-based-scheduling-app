@@ -1,5 +1,14 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { DailySummary, Profile, Task, TimerState } from "../types";
+import type {
+  AppPreferences,
+  DailySummary,
+  DailyTotalRow,
+  Profile,
+  SessionHistoryRow,
+  Task,
+  TimerState,
+  TodoItem,
+} from "../types";
 
 export async function listProfiles(): Promise<Profile[]> {
   return invoke("list_profiles");
@@ -98,4 +107,70 @@ export async function getLastQuickProfile(): Promise<string | null> {
 
 export async function getQuickSessionProfileId(): Promise<string> {
   return invoke("get_quick_session_profile_id");
+}
+
+export async function getPreferences(): Promise<AppPreferences> {
+  return invoke("get_preferences");
+}
+
+export async function setPreferences(input: AppPreferences): Promise<AppPreferences> {
+  return invoke("set_preferences", { input });
+}
+
+export async function getHistoryDailyTotals(
+  startDate: string,
+  endDate: string,
+): Promise<DailyTotalRow[]> {
+  return invoke("get_history_daily_totals", { input: { startDate, endDate } });
+}
+
+export async function listSessionHistory(
+  startDate?: string,
+  endDate?: string,
+): Promise<SessionHistoryRow[]> {
+  return invoke("list_session_history", { input: { startDate: startDate ?? null, endDate: endDate ?? null } });
+}
+
+export async function listTodos(includeRemoved = false): Promise<TodoItem[]> {
+  return invoke("list_todos", { input: { includeRemoved } });
+}
+
+export async function createTodo(payload: {
+  title: string;
+  notes?: string | null;
+  sortIndex?: number | null;
+}): Promise<TodoItem> {
+  return invoke("create_todo", {
+    input: {
+      title: payload.title,
+      notes: payload.notes ?? null,
+      sortIndex: payload.sortIndex ?? null,
+    },
+  });
+}
+
+export async function updateTodo(payload: {
+  id: string;
+  title: string;
+  notes?: string | null;
+  lastWorkedOnAt?: number | null;
+  sortIndex?: number | null;
+}): Promise<TodoItem> {
+  return invoke("update_todo", {
+    input: {
+      id: payload.id,
+      title: payload.title,
+      notes: payload.notes ?? null,
+      lastWorkedOnAt: payload.lastWorkedOnAt ?? null,
+      sortIndex: payload.sortIndex ?? null,
+    },
+  });
+}
+
+export async function toggleTodoDone(id: string, done: boolean): Promise<TodoItem> {
+  return invoke("toggle_todo_done", { input: { id, done } });
+}
+
+export async function removeTodo(id: string): Promise<TodoItem> {
+  return invoke("remove_todo", { id });
 }

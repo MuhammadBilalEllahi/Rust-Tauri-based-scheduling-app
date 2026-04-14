@@ -3,12 +3,15 @@ use tauri::{AppHandle, State};
 
 use crate::app_prefs;
 use crate::companion_window;
-use crate::models::{DailySummary, Profile, Task, TimerState};
+use crate::history_engine;
+use crate::models::{DailySummary, DailyTotalRow, Profile, SessionHistoryRow, Task, TimerState, Todo};
+use crate::preferences::{self, AppPreferences};
 use crate::profile_manager;
 use crate::quick_profile;
 use crate::report_engine;
 use crate::session_engine;
 use crate::task_manager;
+use crate::todo_manager;
 use crate::AppState;
 
 #[derive(Deserialize)]
@@ -65,6 +68,51 @@ pub struct DailySummaryInput {
 #[serde(rename_all = "camelCase")]
 pub struct SetLastQuickProfileInput {
     pub profile_id: String,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HistoryRangeInput {
+    pub start_date: String,
+    pub end_date: String,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SessionHistoryInput {
+    pub start_date: Option<String>,
+    pub end_date: Option<String>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateTodoInput {
+    pub title: String,
+    pub notes: Option<String>,
+    pub sort_index: Option<i64>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateTodoInput {
+    pub id: String,
+    pub title: String,
+    pub notes: Option<String>,
+    pub last_worked_on_at: Option<i64>,
+    pub sort_index: Option<i64>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ToggleTodoDoneInput {
+    pub id: String,
+    pub done: bool,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListTodosInput {
+    pub include_removed: Option<bool>,
 }
 
 #[tauri::command]
@@ -197,4 +245,78 @@ pub fn get_last_quick_profile(state: State<'_, AppState>) -> Result<Option<Strin
 #[tauri::command]
 pub fn get_quick_session_profile_id() -> String {
     quick_profile::quick_profile_id_string()
+}
+
+#[tauri::command]
+pub fn get_preferences(state: State<'_, AppState>) -> Result<AppPreferences, String> {
+    let conn = state.db.lock().map_err(|e| e.to_string())?;
+    preferences::get_preferences(&conn)
+}
+
+#[tauri::command]
+pub fn set_preferences(
+    state: State<'_, AppState>,
+    input: AppPreferences,
+) -> Result<AppPreferences, String> {
+    let conn = state.db.lock().map_err(|e| e.to_string())?;
+    preferences::set_preferences(&conn, input)
+}
+
+#[tauri::command]
+pub fn get_history_daily_totals(
+    state: State<'_, AppState>,
+    input: HistoryRangeInput,
+) -> Result<Vec<DailyTotalRow>, String> {
+    let conn = state.db.lock().map_err(|e| e.to_string())?;
+    history_engine::daily_totals_range(&conn, &input.start_date, &input.end_date)
+}
+
+#[tauri::command]
+pub fn list_session_history(
+    state: State<'_, AppState>,
+    input: SessionHistoryInput,
+) -> Result<Vec<SessionHistoryRow>, String> {
+    let conn = state.db.lock().map_err(|e| e.to_string())?;
+    history_engine::list_sessions(&conn, input.start_date.as_deref(), input.end_date.as_deref())
+}
+
+#[tauri::command]
+pub fn list_todos(state: State<'_, AppState>, input: Option<ListTodosInput>) -> Result<Vec<Todo>, String> {
+    let conn = state.db.lock().map_err(|e| e.to_string())?;
+    let include_removed = input.and_then(|i| i.include_removed).unwrap_or(false);
+    todo_manager::list_todos(&conn, include_removed)
+}
+
+#[tauri::command]
+pub fn create_todo(state: State<'_, AppState>, input: CreateTodoInput) -> Result<Todo, String> {
+    let conn = state.db.lock().map_err(|e| e.to_string())?;
+    todo_manager::create_todo(&conn, input.title, input.notes, input.sort_index)
+}
+
+#[tauri::command]
+pub fn update_todo(state: State<'_, AppState>, input: UpdateTodoInput) -> Result<Todo, String> {
+    let conn = state.db.lock().map_err(|e| e.to_string())?;
+    todo_manager::update_todo(
+        &conn,
+        &input.id,
+        input.title,
+        input.notes,
+        input.last_worked_on_at,
+        input.sort_index,
+    )
+}
+
+#[tauri::command]
+pub fn toggle_todo_done(
+    state: State<'_, AppState>,
+    input: ToggleTodoDoneInput,
+) -> Result<Todo, String> {
+    let conn = state.db.lock().map_err(|e| e.to_string())?;
+    todo_manager::toggle_todo_done(&conn, &input.id, input.done)
+}
+
+#[tauri::command]
+pub fn remove_todo(state: State<'_, AppState>, id: String) -> Result<Todo, String> {
+    let conn = state.db.lock().map_err(|e| e.to_string())?;
+    todo_manager::remove_todo(&conn, &id)
 }

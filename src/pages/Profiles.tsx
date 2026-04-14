@@ -100,7 +100,7 @@ export function Profiles() {
       ) : null}
 
       <section className="card" aria-label={editingId ? "Edit profile" : "Create profile"}>
-        <h2 style={{ margin: "0 0 16px", fontSize: 18, fontWeight: 600 }}>
+        <h2 style={{ margin: "0 0 16px", fontSize: "calc(18 / 14 * 1rem)", fontWeight: 600 }}>
           {editingId ? "Edit profile" : "New profile"}
         </h2>
         <form onSubmit={onSubmit}>
@@ -150,7 +150,9 @@ export function Profiles() {
       </section>
 
       <section className="card" aria-label="Profile list">
-        <h2 style={{ margin: "0 0 16px", fontSize: 18, fontWeight: 600 }}>Your profiles</h2>
+        <h2 style={{ margin: "0 0 16px", fontSize: "calc(18 / 14 * 1rem)", fontWeight: 600 }}>
+          Your profiles
+        </h2>
         {profiles.length === 0 ? (
           <p className="muted">No profiles yet. Create one above.</p>
         ) : (

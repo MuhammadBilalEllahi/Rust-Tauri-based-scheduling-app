@@ -3,6 +3,7 @@ use rusqlite::{params, Connection, OptionalExtension};
 use uuid::Uuid;
 
 use crate::models::{SessionStatus, TimerState};
+use crate::preferences;
 use crate::profile_manager;
 use crate::task_manager;
 
@@ -16,6 +17,8 @@ type OpenSessionRow = (
     i64,
     Option<i64>,
     String,
+    String,
+    Option<String>,
 );
 
 fn now_ms() -> i64 {
@@ -27,7 +30,7 @@ pub fn get_timer_state(conn: &Connection) -> rusqlite::Result<TimerState> {
         .query_row(
             r#"
             SELECT s.id, s.profile_id, s.task_id, s.status, s.started_at, s.accumulated_seconds, s.running_since,
-                   p.name AS profile_name
+                   p.name AS profile_name, s.timezone_mode, s.timezone_id
             FROM sessions s
             JOIN profiles p ON p.id = s.profile_id
             WHERE s.status IN ('active', 'paused')
@@ -44,12 +47,25 @@ pub fn get_timer_state(conn: &Connection) -> rusqlite::Result<TimerState> {
                     row.get(5)?,
                     row.get(6)?,
                     row.get(7)?,
+                    row.get(8)?,
+                    row.get(9)?,
                 ))
             },
         )
         .optional()?;
 
-    let Some((sid, pid, tid, status_s, started_at, accumulated, running_since, profile_name)) = row
+    let Some((
+        sid,
+        pid,
+        tid,
+        status_s,
+        started_at,
+        accumulated,
+        running_since,
+        profile_name,
+        timezone_mode,
+        timezone_id,
+    )) = row
     else {
         return Ok(TimerState {
             session_id: None,
@@ -62,6 +78,8 @@ pub fn get_timer_state(conn: &Connection) -> rusqlite::Result<TimerState> {
             display_seconds: 0,
             accumulated_seconds: 0,
             running_since: None,
+            timezone_mode: None,
+            timezone_id: None,
         });
     };
 
@@ -90,6 +108,8 @@ pub fn get_timer_state(conn: &Connection) -> rusqlite::Result<TimerState> {
         display_seconds,
         accumulated_seconds: accumulated,
         running_since,
+        timezone_mode: Some(timezone_mode),
+        timezone_id,
     })
 }
 
@@ -159,10 +179,17 @@ pub fn start_session(
 
     let id = Uuid::new_v4().to_string();
     let started_at = now_ms();
+    let prefs = preferences::get_preferences(conn)?;
+    let timezone_mode = prefs.timezone_mode;
+    let timezone_id = if timezone_mode == "manual" {
+        prefs.timezone_id
+    } else {
+        None
+    };
     conn.execute(
-        "INSERT INTO sessions (id, profile_id, task_id, status, started_at, ended_at, accumulated_seconds, running_since)
-         VALUES (?1, ?2, ?3, 'active', ?4, NULL, 0, ?5)",
-        params![id, profile_id, task_id, started_at, started_at],
+        "INSERT INTO sessions (id, profile_id, task_id, status, started_at, ended_at, accumulated_seconds, running_since, timezone_mode, timezone_id)
+         VALUES (?1, ?2, ?3, 'active', ?4, NULL, 0, ?5, ?6, ?7)",
+        params![id, profile_id, task_id, started_at, started_at, timezone_mode, timezone_id],
     )
     .map_err(|e| e.to_string())?;
 
@@ -247,5 +274,7 @@ pub fn stop_session(conn: &Connection) -> Result<TimerState, String> {
         display_seconds: 0,
         accumulated_seconds: 0,
         running_since: None,
+        timezone_mode: None,
+        timezone_id: None,
     })
 }

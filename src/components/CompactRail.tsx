@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import * as api from "../api/tauri";
-import { formatDuration, useSessionTimer } from "../hooks/useSessionTimer";
+import { useSessionTimer } from "../hooks/useSessionTimer";
+import { formatDurationHms } from "../lib/timeFormat";
 import type { TimerState } from "../types";
 import { useCompanionLayout } from "../context/CompanionLayoutContext";
 
@@ -8,7 +9,7 @@ export function CompactRail() {
   const { setCollapsed } = useCompanionLayout();
   const [timer, setTimer] = useState<TimerState | null>(null);
   const { displaySeconds } = useSessionTimer(timer);
-  const parts = formatDuration(displaySeconds).split(":");
+  const parts = formatDurationHms(displaySeconds).split(":");
 
   const refresh = useCallback(async () => {
     const t = await api.getTimerState();
@@ -56,7 +57,7 @@ export function CompactRail() {
               </span>
             </>
           ) : (
-            <span className="compact-timer-line">{formatDuration(displaySeconds)}</span>
+            <span className="compact-timer-line">{formatDurationHms(displaySeconds)}</span>
           )}
         </div>
         <div className="compact-pill">{isActive ? "Tracking" : isPaused ? "On hold" : "Ready"}</div>

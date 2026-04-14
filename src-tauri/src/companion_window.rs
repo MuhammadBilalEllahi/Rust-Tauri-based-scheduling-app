@@ -12,12 +12,14 @@ fn clamp_i32(value: i32, min_value: i32, max_value: i32) -> i32 {
     value.max(min_value).min(max_value)
 }
 
-fn clamped_position_for_right_edge(
+/// Keep the window fully inside the monitor work area, anchoring to a desired left X and top Y.
+fn clamped_position_for_left_edge(
     area_left: i32,
     area_top: i32,
     area_width: i32,
     area_height: i32,
-    right_edge_target: i32,
+    desired_left_x: i32,
+    desired_top_y: i32,
     window_size: PhysicalSize<u32>,
 ) -> PhysicalPosition<i32> {
     let area_right = area_left + area_width;
@@ -28,18 +30,17 @@ fn clamped_position_for_right_edge(
 
     let min_x = area_left;
     let max_x = (area_right - window_width).max(area_left);
-    let desired_x = right_edge_target - window_width;
-    let clamped_x = clamp_i32(desired_x, min_x, max_x);
+    let clamped_x = clamp_i32(desired_left_x, min_x, max_x);
 
     let min_y = area_top;
     let max_y = (area_bottom - window_height).max(area_top);
-    let clamped_y = clamp_i32(area_top, min_y, max_y);
+    let clamped_y = clamp_i32(desired_top_y, min_y, max_y);
 
     PhysicalPosition::new(clamped_x, clamped_y)
 }
 
-/// Dock the companion to the right edge of the primary work area at expanded width.
-pub fn dock_main_window_to_right(app: &AppHandle) -> Result<(), String> {
+/// Dock the companion to the left edge of the current monitor's work area at expanded width.
+pub fn dock_main_window_to_left(app: &AppHandle) -> Result<(), String> {
     let window = main_window(app)?;
     let monitor = window
         .current_monitor()
@@ -52,13 +53,13 @@ pub fn dock_main_window_to_right(app: &AppHandle) -> Result<(), String> {
         .set_size(PhysicalSize::new(width, height))
         .map_err(|e| e.to_string())?;
     let actual_size = window.outer_size().map_err(|e| e.to_string())?;
-    let right_edge_target = area.position.x + area.size.width as i32;
-    let pos = clamped_position_for_right_edge(
+    let pos = clamped_position_for_left_edge(
         area.position.x,
         area.position.y,
         area.size.width as i32,
         area.size.height as i32,
-        right_edge_target,
+        area.position.x,
+        area.position.y,
         actual_size,
     );
     window
@@ -67,7 +68,7 @@ pub fn dock_main_window_to_right(app: &AppHandle) -> Result<(), String> {
     Ok(())
 }
 
-/// Resize width while keeping the window's right edge anchored.
+/// Resize width while keeping the window's left edge anchored (and Y clamped to work area).
 pub fn set_main_collapsed(app: &AppHandle, collapsed: bool) -> Result<(), String> {
     let window = main_window(app)?;
     let monitor = window
@@ -82,18 +83,19 @@ pub fn set_main_collapsed(app: &AppHandle, collapsed: bool) -> Result<(), String
         WIDTH_EXPANDED
     };
     let pos = window.outer_position().map_err(|e| e.to_string())?;
-    let sz = window.outer_size().map_err(|e| e.to_string())?;
-    let right_edge = pos.x + sz.width as i32;
+    let left_x = pos.x;
+    let top_y = pos.y;
     window
         .set_size(PhysicalSize::new(width, height))
         .map_err(|e| e.to_string())?;
     let actual_size = window.outer_size().map_err(|e| e.to_string())?;
-    let clamped_pos = clamped_position_for_right_edge(
+    let clamped_pos = clamped_position_for_left_edge(
         area.position.x,
         area.position.y,
         area.size.width as i32,
         area.size.height as i32,
-        right_edge,
+        left_x,
+        top_y,
         actual_size,
     );
     window

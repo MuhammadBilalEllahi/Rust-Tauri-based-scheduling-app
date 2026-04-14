@@ -102,6 +102,7 @@ pub fn daily_summary(conn: &Connection, date: &str) -> Result<DailySummary, Stri
                 profile_name: p.name,
                 color: p.color,
                 actual_minutes,
+                actual_seconds: actual_sec,
                 target_minutes,
                 delta_minutes,
             }
@@ -125,15 +126,18 @@ pub fn daily_summary(conn: &Connection, date: &str) -> Result<DailySummary, Stri
             profile_id,
             profile_name: pname,
             actual_minutes: secs / 60,
+            actual_seconds: secs,
         });
     }
     tasks_out.sort_by(|a, b| a.profile_name.cmp(&b.profile_name).then(a.task_name.cmp(&b.task_name)));
 
     let total_actual_minutes: i64 = profiles_out.iter().map(|p| p.actual_minutes).sum();
+    let total_actual_seconds: i64 = profiles_out.iter().map(|p| p.actual_seconds).sum();
 
     Ok(DailySummary {
         date: date.to_string(),
         total_actual_minutes,
+        total_actual_seconds,
         profiles: profiles_out,
         tasks: tasks_out,
     })

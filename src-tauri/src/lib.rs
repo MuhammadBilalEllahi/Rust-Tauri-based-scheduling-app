@@ -6,13 +6,16 @@ use tauri::Manager;
 mod app_prefs;
 mod commands;
 mod companion_window;
+mod history_engine;
 mod models;
+mod preferences;
 mod profile_manager;
 mod quick_profile;
 mod report_engine;
 mod session_engine;
 mod storage;
 mod task_manager;
+mod todo_manager;
 mod tray;
 
 pub struct AppState {
@@ -33,7 +36,7 @@ pub fn run() {
             app.manage(AppState {
                 db: Mutex::new(conn),
             });
-            companion_window::dock_main_window_to_right(app.handle())
+            companion_window::dock_main_window_to_left(app.handle())
                 .map_err(|e| format!("Failed to position window: {e}"))?;
             tray::init_tray(app).map_err(|e| format!("Failed to init tray: {e}"))?;
             Ok(())
@@ -65,6 +68,15 @@ pub fn run() {
             commands::set_last_quick_profile,
             commands::get_last_quick_profile,
             commands::get_quick_session_profile_id,
+            commands::get_preferences,
+            commands::set_preferences,
+            commands::get_history_daily_totals,
+            commands::list_session_history,
+            commands::list_todos,
+            commands::create_todo,
+            commands::update_todo,
+            commands::toggle_todo_done,
+            commands::remove_todo,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

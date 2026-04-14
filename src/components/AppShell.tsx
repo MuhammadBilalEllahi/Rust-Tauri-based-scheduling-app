@@ -58,7 +58,7 @@ export function AppShell() {
               >
                 ◀
               </button>
-              <NavLink className={navClass} to="/" end title="Dashboard" aria-label="Dashboard">
+              <NavLink className={navClass} to="/" end title="Overview" aria-label="Overview">
                 <span aria-hidden>◎</span>
               </NavLink>
               <NavLink className={navClass} to="/profiles" title="Profiles" aria-label="Profiles">
