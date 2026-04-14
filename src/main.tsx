@@ -11,3 +11,11 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
     <App />
   </React.StrictMode>,
 );
+
+const splash = document.getElementById("boot-splash");
+if (splash) {
+  requestAnimationFrame(() => {
+    splash.classList.add("is-hidden");
+    window.setTimeout(() => splash.remove(), 220);
+  });
+}

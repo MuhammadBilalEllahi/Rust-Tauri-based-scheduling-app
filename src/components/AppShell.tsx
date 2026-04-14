@@ -25,7 +25,7 @@ export function AppShell() {
   };
 
   return (
-    <div className={"app-root" + (collapsed ? " app-root--collapsed" : "")}>
+    <div className={"app-root" + (collapsed ? " app-root--collapsed" : "")} data-tauri-drag-region>
       <div className="app-body">
         {!collapsed ? (
           <>

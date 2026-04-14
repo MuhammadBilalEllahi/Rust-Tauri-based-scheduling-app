@@ -5,9 +5,57 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Time Accountability</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #000;
+        color: #fff;
+        font-family: "Roboto", -apple-system, system-ui, sans-serif;
+      }
+      #boot-splash {
+        position: fixed;
+        inset: 0;
+        background: linear-gradient(180deg, #000 0%, #121212 100%);
+        display: grid;
+        place-items: center;
+        z-index: 9999;
+        transition: opacity 180ms ease;
+      }
+      #boot-splash.is-hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+      .boot-splash__inner {
+        text-align: center;
+        padding: 24px;
+      }
+      .boot-splash__title {
+        margin: 0 0 8px;
+        font-size: 28px;
+        font-weight: 500;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #ffc000;
+      }
+      .boot-splash__subtitle {
+        margin: 0;
+        font-size: 12px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: #e6e6e6;
+      }
+    </style>
   </head>
 
   <body>
+    <div id="boot-splash" aria-hidden="true">
+      <div class="boot-splash__inner">
+        <p class="boot-splash__title">Time Companion</p>
+        <p class="boot-splash__subtitle">Initializing workspace</p>
+      </div>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
