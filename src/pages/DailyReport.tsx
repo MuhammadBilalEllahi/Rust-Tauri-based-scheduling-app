@@ -53,18 +53,14 @@ export function DailyReport() {
             </div>
           ) : null}
           <section className="card" aria-label="Summary">
-            <h2 style={{ margin: "0 0 12px", fontSize: "calc(18 / 14 * 1rem)", fontWeight: 600 }}>
-              Overview
-            </h2>
+            <h2 className="section-title-sm">Overview</h2>
             <p style={{ margin: 0, fontSize: "calc(15 / 14 * 1rem)" }}>
               Total actual: <strong>{formatDurationHms(summary.totalActualSeconds)}</strong>
             </p>
           </section>
 
           <section className="card" aria-label="Profiles">
-            <h2 style={{ margin: "0 0 16px", fontSize: "calc(18 / 14 * 1rem)", fontWeight: 600 }}>
-              By profile
-            </h2>
+            <h2 className="section-title-sm">By profile</h2>
             <table className="table">
               <thead>
                 <tr>
@@ -84,7 +80,7 @@ export function DailyReport() {
                             style={{
                               width: 12,
                               height: 12,
-                              borderRadius: 3,
+                              borderRadius: 0,
                               background: p.color,
                               display: "inline-block",
                               boxShadow: "0 0 0 1px var(--accent-ring)",
@@ -122,9 +118,7 @@ export function DailyReport() {
           </section>
 
           <section className="card" aria-label="Tasks">
-            <h2 style={{ margin: "0 0 16px", fontSize: "calc(18 / 14 * 1rem)", fontWeight: 600 }}>
-              By task
-            </h2>
+            <h2 className="section-title-sm">By task</h2>
             {summary.tasks.length === 0 ? (
               <p className="muted">No task time for this day.</p>
             ) : (
