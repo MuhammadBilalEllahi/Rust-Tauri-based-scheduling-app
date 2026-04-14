@@ -8,6 +8,7 @@ import { DailyReport } from "./pages/DailyReport";
 import { Dashboard } from "./pages/Dashboard";
 import { Profiles } from "./pages/Profiles";
 import { Tasks } from "./pages/Tasks";
+import { TodosPage } from "./pages/TodosPage";
 
 export default function App() {
   useEffect(() => {
@@ -25,6 +26,7 @@ export default function App() {
             <Route index element={<Dashboard />} />
             <Route path="profiles" element={<Profiles />} />
             <Route path="tasks" element={<Tasks />} />
+            <Route path="todos" element={<TodosPage />} />
             <Route path="report" element={<DailyReport />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

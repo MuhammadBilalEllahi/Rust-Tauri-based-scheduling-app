@@ -67,6 +67,9 @@ export function AppShell() {
               <NavLink className={navClass} to="/tasks" title="Tasks" aria-label="Tasks">
                 <span aria-hidden>☰</span>
               </NavLink>
+              <NavLink className={navClass} to="/todos" title="Todos" aria-label="Todos">
+                <span aria-hidden>✓</span>
+              </NavLink>
               <NavLink className={navClass} to="/report" title="Daily report" aria-label="Daily report">
                 <span aria-hidden>▤</span>
               </NavLink>

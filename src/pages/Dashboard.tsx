@@ -18,6 +18,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import * as api from "../api/tauri";
+import { TodoSection } from "../components/todos/TodoSection";
 import { useSessionTimer } from "../hooks/useSessionTimer";
 import {
   formatCurrentClock,
@@ -36,7 +37,6 @@ import type {
   SessionHistoryRow,
   Task,
   TimerState,
-  TodoItem,
 } from "../types";
 import { DEFAULT_OVERVIEW_SECTION_ORDER } from "../types";
 
@@ -130,8 +130,6 @@ export function Dashboard() {
   const [quickProfileId, setQuickProfileId] = useState<string>("");
   const [historyRows, setHistoryRows] = useState<SessionHistoryRow[]>([]);
   const [dailyTotals, setDailyTotals] = useState<DailyTotalRow[]>([]);
-  const [todos, setTodos] = useState<TodoItem[]>([]);
-  const [todoDraft, setTodoDraft] = useState("");
   const [currentClock, setCurrentClock] = useState(() => formatCurrentClock(false));
   const [timer, setTimer] = useState<TimerState | null>(null);
   const [summary, setSummary] = useState<Awaited<ReturnType<typeof api.getDailySummary>> | null>(
@@ -200,10 +198,6 @@ export function Dashboard() {
     setHistoryRows(sessions);
   }, []);
 
-  const refreshTodos = useCallback(async () => {
-    setTodos(await api.listTodos(false));
-  }, []);
-
   useEffect(() => {
     void (async () => {
       try {
@@ -215,12 +209,12 @@ export function Dashboard() {
         setQuickProfileId(quickId);
         setPreferencesState(prefs);
         await refreshProfiles(quickId);
-        await Promise.all([refreshTimer(), refreshSummary(), refreshHistory(), refreshTodos()]);
+        await Promise.all([refreshTimer(), refreshSummary(), refreshHistory()]);
       } catch (e) {
         setError(mapSessionError(String(e)));
       }
     })();
-  }, [refreshHistory, refreshProfiles, refreshSummary, refreshTimer, refreshTodos]);
+  }, [refreshHistory, refreshProfiles, refreshSummary, refreshTimer]);
 
   useEffect(() => {
     const onFocus = () => {
@@ -693,93 +687,7 @@ export function Dashboard() {
           </div>
         );
       case "todos":
-        return (
-          <>
-            <form
-              className="row"
-              onSubmit={(e) => {
-                e.preventDefault();
-                const title = todoDraft.trim();
-                if (!title) {
-                  return;
-                }
-                void (async () => {
-                  await api.createTodo({ title });
-                  setTodoDraft("");
-                  await refreshTodos();
-                })().catch((err) => setError(mapSessionError(String(err))));
-              }}
-            >
-              <input
-                className="input"
-                value={todoDraft}
-                onChange={(e) => setTodoDraft(e.target.value)}
-                placeholder="Add todo"
-                style={{ flex: 1 }}
-              />
-              <button className="btn btn-primary" type="submit">
-                Add
-              </button>
-            </form>
-            <div className="todo-list">
-              {todos.length === 0 ? (
-                <p className="muted">No todos yet.</p>
-              ) : (
-                todos.map((todo) => (
-                  <div key={todo.id} className="todo-row">
-                    <label className="row" style={{ gap: 8, flex: 1 }}>
-                      <input
-                        type="checkbox"
-                        checked={todo.status === "done"}
-                        onChange={(e) =>
-                          void api
-                            .toggleTodoDone(todo.id, e.target.checked)
-                            .then(refreshTodos)
-                            .catch((err) => setError(mapSessionError(String(err))))
-                        }
-                      />
-                      <span
-                        className={
-                          todo.status === "done" ? "todo-title todo-title--done" : "todo-title"
-                        }
-                      >
-                        {todo.title}
-                      </span>
-                    </label>
-                    <button
-                      className="btn btn-frost"
-                      type="button"
-                      onClick={() =>
-                        void api
-                          .updateTodo({
-                            id: todo.id,
-                            title: `${todo.title}`.trim(),
-                            lastWorkedOnAt: Date.now(),
-                          })
-                          .then(refreshTodos)
-                          .catch((err) => setError(mapSessionError(String(err))))
-                      }
-                    >
-                      Touch
-                    </button>
-                    <button
-                      className="btn btn-danger"
-                      type="button"
-                      onClick={() =>
-                        void api
-                          .removeTodo(todo.id)
-                          .then(refreshTodos)
-                          .catch((err) => setError(mapSessionError(String(err))))
-                      }
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))
-              )}
-            </div>
-          </>
-        );
+        return <TodoSection variant="compact" onError={(msg) => setError(msg)} />;
       default: {
         const _exhaustive: never = id;
         return _exhaustive;

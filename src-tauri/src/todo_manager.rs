@@ -8,14 +8,31 @@ fn now_ms() -> i64 {
     Utc::now().timestamp_millis()
 }
 
-pub fn list_todos(conn: &Connection, include_removed: bool) -> Result<Vec<Todo>, String> {
-    let sql = if include_removed {
-        "SELECT id, title, notes, status, created_at, updated_at, completed_at, removed_at, last_worked_on_at, sort_index
-         FROM todos ORDER BY sort_index ASC, created_at DESC"
+/// Active rows first, then done, then removed (when included). Newest active first; recently completed first.
+fn todo_list_order_sql(include_removed: bool) -> &'static str {
+    if include_removed {
+        "SELECT id, title, notes, status, created_at, updated_at, completed_at, removed_at, last_worked_on_at, sort_index \
+         FROM todos ORDER BY \
+         CASE WHEN status = 'active' THEN 0 WHEN status = 'done' THEN 1 ELSE 2 END ASC, \
+         CASE \
+             WHEN status = 'active' THEN created_at \
+             WHEN status = 'done' THEN COALESCE(completed_at, updated_at) \
+             ELSE COALESCE(removed_at, updated_at) \
+         END DESC"
     } else {
-        "SELECT id, title, notes, status, created_at, updated_at, completed_at, removed_at, last_worked_on_at, sort_index
-         FROM todos WHERE status != 'removed' ORDER BY sort_index ASC, created_at DESC"
-    };
+        "SELECT id, title, notes, status, created_at, updated_at, completed_at, removed_at, last_worked_on_at, sort_index \
+         FROM todos WHERE status != 'removed' ORDER BY \
+         CASE WHEN status = 'active' THEN 0 WHEN status = 'done' THEN 1 ELSE 2 END ASC, \
+         CASE \
+             WHEN status = 'active' THEN created_at \
+             WHEN status = 'done' THEN COALESCE(completed_at, updated_at) \
+             ELSE COALESCE(removed_at, updated_at) \
+         END DESC"
+    }
+}
+
+pub fn list_todos(conn: &Connection, include_removed: bool) -> Result<Vec<Todo>, String> {
+    let sql = todo_list_order_sql(include_removed);
     let mut stmt = conn.prepare(sql).map_err(|e| e.to_string())?;
     let rows = stmt
         .query_map([], |row| {
