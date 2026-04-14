@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import * as api from "../api/tauri";
 import { useSessionTimer } from "../hooks/useSessionTimer";
+import { mapSessionError } from "../lib/sessionErrors";
 import type { Profile, Task, TimerState } from "../types";
 
 export function Dashboard() {
@@ -9,6 +10,7 @@ export function Dashboard() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [selectedProfileId, setSelectedProfileId] = useState<string>("");
   const [selectedTaskId, setSelectedTaskId] = useState<string>("");
+  const [quickProfileId, setQuickProfileId] = useState<string>("");
   const [timer, setTimer] = useState<TimerState | null>(null);
   const [summary, setSummary] = useState<Awaited<ReturnType<typeof api.getDailySummary>> | null>(
     null,
@@ -37,10 +39,11 @@ export function Dashboard() {
     }
   }, []);
 
-  const refreshProfiles = useCallback(async () => {
+  const refreshProfiles = useCallback(async (excludeProfileId?: string) => {
     const list = await api.listProfiles();
-    setProfiles(list);
-    setSelectedProfileId((cur) => cur || list[0]?.id || "");
+    const filtered = excludeProfileId ? list.filter((profile) => profile.id !== excludeProfileId) : list;
+    setProfiles(filtered);
+    setSelectedProfileId((cur) => cur || filtered[0]?.id || "");
   }, []);
 
   const refreshSummary = useCallback(async () => {
@@ -51,11 +54,13 @@ export function Dashboard() {
     void (async () => {
       try {
         setError(null);
-        await refreshProfiles();
+        const quickId = await api.getQuickSessionProfileId();
+        setQuickProfileId(quickId);
+        await refreshProfiles(quickId);
         await refreshTimer();
         await refreshSummary();
       } catch (e) {
-        setError(String(e));
+        setError(mapSessionError(String(e)));
       }
     })();
   }, [refreshProfiles, refreshTimer, refreshSummary]);
@@ -82,9 +87,23 @@ export function Dashboard() {
     })();
   }, [selectedProfileId]);
 
+  useEffect(() => {
+    if (selectedTaskId && !tasks.some((t) => t.id === selectedTaskId)) {
+      setSelectedTaskId("");
+    }
+  }, [tasks, selectedTaskId]);
+
+  useEffect(() => {
+    if (selectedProfileId) {
+      void api.setLastQuickProfile(selectedProfileId).catch(() => {});
+    }
+  }, [selectedProfileId]);
+
+  const visibleProfiles = profiles;
   const hasSession = Boolean(timer?.sessionId);
   const isActive = timer?.status === "active";
   const isPaused = timer?.status === "paused";
+  const isQuickSessionActive = Boolean(hasSession && timer?.profileId === quickProfileId);
   const canStart =
     Boolean(selectedProfileId) &&
     !hasSession &&
@@ -98,9 +117,10 @@ export function Dashboard() {
         selectedTaskId || null,
       );
       setTimer(t);
+      await api.setLastQuickProfile(selectedProfileId).catch(() => {});
       await refreshSummary();
     } catch (e) {
-      setError(String(e));
+      setError(mapSessionError(String(e)));
     }
   }
 
@@ -110,7 +130,7 @@ export function Dashboard() {
       setTimer(await api.pauseSession());
       await refreshSummary();
     } catch (e) {
-      setError(String(e));
+      setError(mapSessionError(String(e)));
     }
   }
 
@@ -119,7 +139,7 @@ export function Dashboard() {
       setError(null);
       setTimer(await api.resumeSession());
     } catch (e) {
-      setError(String(e));
+      setError(mapSessionError(String(e)));
     }
   }
 
@@ -129,86 +149,100 @@ export function Dashboard() {
       setTimer(await api.stopSession());
       await refreshSummary();
     } catch (e) {
-      setError(String(e));
+      setError(mapSessionError(String(e)));
     }
   }
 
+  async function onQuickSession() {
+    if (!quickProfileId) {
+      return;
+    }
+    try {
+      setError(null);
+      const t = await api.startSession(quickProfileId, null);
+      setTimer(t);
+      await refreshSummary();
+    } catch (e) {
+      setError(mapSessionError(String(e)));
+    }
+  }
+
+  const needProfileHint =
+    visibleProfiles.length > 0 && !selectedProfileId && !hasSession && !isActive && !isPaused;
+  const profileRows = summary?.profiles.filter((profile) => profile.actualMinutes > 0) ?? [];
+  const profileRowsVisible = profileRows.slice(0, 4);
+  const profileRowsOverflow = Math.max(0, profileRows.length - profileRowsVisible.length);
+
   return (
-    <div>
-      <h1 className="page-title">Dashboard</h1>
-      <p className="page-sub">
-        Planned vs actual time — start a session from the timer when you are ready to work.
-      </p>
+    <div className="dashboard">
+      {visibleProfiles.length === 0 ? (
+        <div className="empty-panel">
+          Create a work profile first, then come back here to start tracking.
+          <div style={{ marginTop: 10 }}>
+            <Link to="/profiles">Go to Profiles</Link>
+          </div>
+        </div>
+      ) : null}
 
       {error ? <p className="error">{error}</p> : null}
 
       <section className="card" aria-label="Session timer">
-        <div className="timer-meta">
-          {hasSession ? (
-            <>
-              <span className="chip">
-                <span
-                  className="chip-dot"
-                  style={{
-                    background:
-                      profiles.find((p) => p.id === timer?.profileId)?.color ||
-                      "var(--accent)",
-                  }}
-                />
-                {timer?.profileName ?? "Profile"}
-              </span>
-              {timer?.taskName ? (
-                <span className="chip" style={{ marginLeft: 8 }}>
-                  {timer.taskName}
-                </span>
-              ) : (
-                <span className="muted" style={{ marginLeft: 8 }}>
-                  No task
-                </span>
-              )}
-              <span className="muted" style={{ marginLeft: 12 }}>
-                {isActive ? "Running" : isPaused ? "Paused" : ""}
-              </span>
-            </>
-          ) : (
-            <span className="muted">No active session</span>
-          )}
-        </div>
+        <div className="timer-display timer-display--hero">{format()}</div>
+        <p className="timer-state-line">
+          <span>{isActive ? "Running" : isPaused ? "Paused" : "Idle"}</span>
+          {" · "}
+          <span>{isQuickSessionActive ? "Quick Session" : timer?.profileName ?? "No profile"}</span>
+          {" · "}
+          <span>{timer?.taskName ?? "No task"}</span>
+        </p>
 
-        <div className="timer-display">{format()}</div>
-
-        <div className="row" style={{ marginBottom: 16 }}>
-          <button className="btn btn-primary" type="button" disabled={!canStart} onClick={onStart}>
-            Start
+        <div className="icon-controls">
+          <button
+            className="btn btn-primary btn-icon"
+            type="button"
+            disabled={isActive || (!isPaused && !canStart)}
+            onClick={isPaused ? onResume : onStart}
+            title={isPaused ? "Resume" : "Start"}
+            aria-label={isPaused ? "Resume session" : "Start session"}
+          >
+            ▶
           </button>
           <button
-            className="btn btn-frost"
+            className="btn btn-frost btn-icon"
             type="button"
             disabled={!isActive}
             onClick={onPause}
+            title="Pause"
+            aria-label="Pause session"
           >
-            Pause
+            II
           </button>
           <button
-            className="btn btn-frost"
-            type="button"
-            disabled={!isPaused}
-            onClick={onResume}
-          >
-            Resume
-          </button>
-          <button
-            className="btn btn-danger"
+            className="btn btn-danger btn-icon"
             type="button"
             disabled={!hasSession}
             onClick={onStop}
+            title="Stop"
+            aria-label="Stop session"
           >
-            Stop
+            ■
           </button>
         </div>
+        {!hasSession ? (
+          <button
+            type="button"
+            className="btn btn-quick"
+            disabled={!quickProfileId}
+            onClick={onQuickSession}
+          >
+            Quick Session
+          </button>
+        ) : null}
 
-        <div className="row" style={{ alignItems: "flex-end" }}>
-          <div className="field" style={{ marginBottom: 0, flex: "1 1 200px" }}>
+        {needProfileHint ? <p className="hint">Choose a profile below before starting.</p> : null}
+
+        <div className="row row--selectors">
+          <div className="field" style={{ marginBottom: 0, flex: "1 1 120px" }}>
             <label htmlFor="dash-profile">Profile</label>
             <select
               id="dash-profile"
@@ -216,19 +250,20 @@ export function Dashboard() {
               value={selectedProfileId}
               disabled={isActive || isPaused}
               onChange={(e) => {
-                setSelectedProfileId(e.target.value);
+                const v = e.target.value;
+                setSelectedProfileId(v);
                 setSelectedTaskId("");
               }}
             >
               <option value="">Select profile…</option>
-              {profiles.map((p) => (
+              {visibleProfiles.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
                 </option>
               ))}
             </select>
           </div>
-          <div className="field" style={{ marginBottom: 0, flex: "1 1 200px" }}>
+          <div className="field" style={{ marginBottom: 0, flex: "1 1 120px" }}>
             <label htmlFor="dash-task">Task (optional)</label>
             <select
               id="dash-task"
@@ -249,38 +284,34 @@ export function Dashboard() {
       </section>
 
       <section className="card" aria-label="Today preview">
-        <h2 style={{ margin: "0 0 8px", fontSize: 18, fontWeight: 600 }}>Today</h2>
-        <p className="muted" style={{ margin: "0 0 12px", fontSize: 14 }}>
+        <h2 className="section-title-sm">Today</h2>
+        <p className="muted" style={{ margin: "0 0 12px", fontSize: 13 }}>
           Total tracked:{" "}
           <strong style={{ color: "var(--text)" }}>
             {summary ? `${summary.totalActualMinutes} min` : "—"}
           </strong>
           {" · "}
-          <Link to="/report">Open daily report</Link>
+          <Link to="/report">Daily report</Link>
         </p>
-        {summary && summary.profiles.filter((p) => p.actualMinutes > 0).length > 0 ? (
-          <div className="summary-grid">
-            {summary.profiles
-              .filter((p) => p.actualMinutes > 0)
-              .slice(0, 4)
-              .map((p) => (
-                <div key={p.profileId} className="summary-card">
-                  <h4>{p.profileName}</h4>
-                  <p>{p.actualMinutes} min</p>
-                  {p.targetMinutes != null ? (
-                    <p className="muted" style={{ fontSize: 13, marginTop: 6 }}>
-                      Target {p.targetMinutes} min
-                      {p.deltaMinutes != null ? ` · Δ ${p.deltaMinutes}` : ""}
-                    </p>
-                  ) : null}
-                </div>
-              ))}
+        {profileRows.length > 0 ? (
+          <div className="snapshot-list">
+            {profileRowsVisible.map((p) => (
+              <div key={p.profileId} className="snapshot-row">
+                <span className="snapshot-name">{p.profileName}</span>
+                <span className="snapshot-value">{p.actualMinutes}m</span>
+              </div>
+            ))}
           </div>
         ) : (
-          <p className="muted" style={{ margin: 0, fontSize: 14 }}>
+          <p className="muted" style={{ margin: 0, fontSize: 13 }}>
             No time logged yet today.
           </p>
         )}
+        {profileRowsOverflow > 0 ? (
+          <p className="muted" style={{ margin: "8px 0 0", fontSize: 12 }}>
+            +{profileRowsOverflow} more profiles
+          </p>
+        ) : null}
       </section>
     </div>
   );

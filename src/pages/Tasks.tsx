@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import * as api from "../api/tauri";
+import { mapSessionError } from "../lib/sessionErrors";
 import type { Profile, Task } from "../types";
 
 export function Tasks() {
@@ -11,9 +13,13 @@ export function Tasks() {
   const [error, setError] = useState<string | null>(null);
 
   const loadProfiles = useCallback(async () => {
-    const list = await api.listProfiles();
-    setProfiles(list);
-    setProfileId((cur) => cur || list[0]?.id || "");
+    const [list, quickId] = await Promise.all([
+      api.listProfiles(),
+      api.getQuickSessionProfileId(),
+    ]);
+    const filtered = list.filter((profile) => profile.id !== quickId);
+    setProfiles(filtered);
+    setProfileId((cur) => cur || filtered[0]?.id || "");
   }, []);
 
   const loadTasks = useCallback(async () => {
@@ -25,11 +31,11 @@ export function Tasks() {
   }, [profileId]);
 
   useEffect(() => {
-    void loadProfiles().catch((e) => setError(String(e)));
+    void loadProfiles().catch((e) => setError(mapSessionError(String(e))));
   }, [loadProfiles]);
 
   useEffect(() => {
-    void loadTasks().catch((e) => setError(String(e)));
+    void loadTasks().catch((e) => setError(mapSessionError(String(e))));
   }, [loadTasks]);
 
   function resetForm() {
@@ -53,7 +59,7 @@ export function Tasks() {
       resetForm();
       await loadTasks();
     } catch (err) {
-      setError(String(err));
+      setError(mapSessionError(String(err)));
     }
   }
 
@@ -74,15 +80,24 @@ export function Tasks() {
       }
       await loadTasks();
     } catch (err) {
-      setError(String(err));
+      setError(mapSessionError(String(err)));
     }
   }
 
   return (
     <div>
-      <h1 className="page-title">Tasks</h1>
+      <h1 className="page-heading-soft">Tasks</h1>
       <p className="page-sub">Tasks belong to a profile. Tracking can run with or without a task.</p>
       {error ? <p className="error">{error}</p> : null}
+
+      {profiles.length === 0 ? (
+        <div className="empty-panel" style={{ marginBottom: 16 }}>
+          Create a profile first, then add tasks for it.
+          <div style={{ marginTop: 10 }}>
+            <Link to="/profiles">Go to Profiles</Link>
+          </div>
+        </div>
+      ) : null}
 
       <section className="card" aria-label="Profile filter">
         <div className="field" style={{ marginBottom: 0 }}>

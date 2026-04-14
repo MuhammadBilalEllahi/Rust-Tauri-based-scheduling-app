@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import * as api from "../api/tauri";
+import { mapSessionError } from "../lib/sessionErrors";
 import type { Profile } from "../types";
 
 export function Profiles() {
@@ -11,11 +12,15 @@ export function Profiles() {
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    setProfiles(await api.listProfiles());
+    const [list, quickId] = await Promise.all([
+      api.listProfiles(),
+      api.getQuickSessionProfileId(),
+    ]);
+    setProfiles(list.filter((profile) => profile.id !== quickId));
   }, []);
 
   useEffect(() => {
-    void load().catch((e) => setError(String(e)));
+    void load().catch((e) => setError(mapSessionError(String(e))));
   }, [load]);
 
   function resetForm() {
@@ -52,7 +57,7 @@ export function Profiles() {
       resetForm();
       await load();
     } catch (err) {
-      setError(String(err));
+      setError(mapSessionError(String(err)));
     }
   }
 
@@ -77,15 +82,22 @@ export function Profiles() {
       }
       await load();
     } catch (err) {
-      setError(String(err));
+      setError(mapSessionError(String(err)));
     }
   }
 
   return (
     <div>
-      <h1 className="page-title">Profiles</h1>
+      <h1 className="page-heading-soft">Profiles</h1>
       <p className="page-sub">Work areas or roles. Optional color and daily target (minutes).</p>
       {error ? <p className="error">{error}</p> : null}
+
+      {profiles.length === 0 ? (
+        <div className="empty-panel" style={{ marginBottom: 16 }}>
+          You have no profiles yet. Add your first work area below — you will need one to start the
+          timer on the dashboard.
+        </div>
+      ) : null}
 
       <section className="card" aria-label={editingId ? "Edit profile" : "Create profile"}>
         <h2 style={{ margin: "0 0 16px", fontSize: 18, fontWeight: 600 }}>

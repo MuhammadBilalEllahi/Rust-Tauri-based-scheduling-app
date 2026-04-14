@@ -83,3 +83,19 @@ export async function stopSession(): Promise<TimerState> {
 export async function getDailySummary(date: string): Promise<DailySummary> {
   return invoke("get_daily_summary", { input: { date } });
 }
+
+export async function setCompanionCollapsed(collapsed: boolean): Promise<void> {
+  return invoke("set_companion_collapsed", { collapsed });
+}
+
+export async function setLastQuickProfile(profileId: string): Promise<void> {
+  return invoke("set_last_quick_profile", { input: { profileId } });
+}
+
+export async function getLastQuickProfile(): Promise<string | null> {
+  return invoke("get_last_quick_profile");
+}
+
+export async function getQuickSessionProfileId(): Promise<string> {
+  return invoke("get_quick_session_profile_id");
+}

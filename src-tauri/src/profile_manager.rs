@@ -3,6 +3,7 @@ use rusqlite::{params, Connection};
 use uuid::Uuid;
 
 use crate::models::Profile;
+use crate::quick_profile;
 
 pub fn list_profiles(conn: &Connection) -> rusqlite::Result<Vec<Profile>> {
     let mut stmt = conn.prepare(
@@ -47,6 +48,9 @@ pub fn update_profile(
     color: Option<String>,
     daily_target_minutes: Option<i64>,
 ) -> Result<Profile, String> {
+    if id == quick_profile::QUICK_PROFILE_ID {
+        return Err("Quick Session cannot be edited".into());
+    }
     let name = name.trim().to_string();
     if name.is_empty() {
         return Err("Profile name is required".into());
@@ -64,6 +68,9 @@ pub fn update_profile(
 }
 
 pub fn delete_profile(conn: &Connection, id: &str) -> Result<(), String> {
+    if id == quick_profile::QUICK_PROFILE_ID {
+        return Err("Quick Session cannot be deleted".into());
+    }
     let n = conn
         .execute("DELETE FROM profiles WHERE id = ?1", params![id])
         .map_err(|e| e.to_string())?;

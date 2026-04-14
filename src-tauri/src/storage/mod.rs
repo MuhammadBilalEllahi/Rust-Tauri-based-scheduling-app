@@ -2,10 +2,13 @@ use std::path::Path;
 
 use rusqlite::Connection;
 
+use crate::quick_profile;
+
 pub fn open(path: &Path) -> rusqlite::Result<Connection> {
     let conn = Connection::open(path)?;
     conn.execute_batch("PRAGMA foreign_keys = ON;")?;
     init_schema(&conn)?;
+    quick_profile::ensure_quick_profile(&conn)?;
     Ok(conn)
 }
 
@@ -40,6 +43,11 @@ pub fn init_schema(conn: &Connection) -> rusqlite::Result<()> {
 
         CREATE INDEX IF NOT EXISTS idx_sessions_status ON sessions(status);
         CREATE INDEX IF NOT EXISTS idx_tasks_profile ON tasks(profile_id);
+
+        CREATE TABLE IF NOT EXISTS app_kv (
+            key TEXT PRIMARY KEY NOT NULL,
+            value TEXT NOT NULL
+        );
         "#,
     )?;
     Ok(())

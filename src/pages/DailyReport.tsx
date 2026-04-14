@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import * as api from "../api/tauri";
+import { mapSessionError } from "../lib/sessionErrors";
 import type { DailySummary } from "../types";
 
 function todayIso(): string {
@@ -21,12 +22,12 @@ export function DailyReport() {
   }, [date]);
 
   useEffect(() => {
-    void load().catch((e) => setError(String(e)));
+    void load().catch((e) => setError(mapSessionError(String(e))));
   }, [load]);
 
   return (
     <div>
-      <h1 className="page-title">Daily report</h1>
+      <h1 className="page-heading-soft">Daily report</h1>
       <p className="page-sub">Actual minutes per profile and task; compare to daily targets.</p>
       {error ? <p className="error">{error}</p> : null}
 
@@ -45,6 +46,11 @@ export function DailyReport() {
 
       {summary ? (
         <>
+          {summary.totalActualMinutes === 0 ? (
+            <div className="empty-panel" style={{ marginBottom: 16 }}>
+              No tracked time on this day yet. Start a session from the dashboard when you work.
+            </div>
+          ) : null}
           <section className="card" aria-label="Summary">
             <h2 style={{ margin: "0 0 12px", fontSize: 18, fontWeight: 600 }}>Overview</h2>
             <p style={{ margin: 0, fontSize: 15 }}>

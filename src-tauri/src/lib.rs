@@ -3,13 +3,17 @@ use std::sync::Mutex;
 use rusqlite::Connection;
 use tauri::Manager;
 
+mod app_prefs;
 mod commands;
+mod companion_window;
 mod models;
 mod profile_manager;
+mod quick_profile;
 mod report_engine;
 mod session_engine;
 mod storage;
 mod task_manager;
+mod tray;
 
 pub struct AppState {
     pub db: Mutex<Connection>,
@@ -29,7 +33,18 @@ pub fn run() {
             app.manage(AppState {
                 db: Mutex::new(conn),
             });
+            companion_window::dock_main_window_to_right(app.handle())
+                .map_err(|e| format!("Failed to position window: {e}"))?;
+            tray::init_tray(app).map_err(|e| format!("Failed to init tray: {e}"))?;
             Ok(())
+        })
+        .on_window_event(|window, event| {
+            if window.label() == "main" {
+                if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                    api.prevent_close();
+                    let _ = window.hide();
+                }
+            }
         })
         .invoke_handler(tauri::generate_handler![
             commands::list_profiles,
@@ -46,6 +61,10 @@ pub fn run() {
             commands::resume_session,
             commands::stop_session,
             commands::get_daily_summary,
+            commands::set_companion_collapsed,
+            commands::set_last_quick_profile,
+            commands::get_last_quick_profile,
+            commands::get_quick_session_profile_id,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

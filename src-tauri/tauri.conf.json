@@ -12,9 +12,15 @@
   "app": {
     "windows": [
       {
+        "label": "main",
         "title": "Time Accountability",
-        "width": 1024,
-        "height": 720
+        "width": 360,
+        "height": 900,
+        "decorations": false,
+        "shadow": true,
+        "minWidth": 64,
+        "minHeight": 400,
+        "resizable": true
       }
     ],
     "security": {
