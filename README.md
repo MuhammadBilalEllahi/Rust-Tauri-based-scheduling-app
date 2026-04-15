@@ -12,6 +12,27 @@ The app is designed as a narrow companion panel that stays out of your way while
 - todo workflow and execution mode
 - daily report and maintenance tools
 
+## Download
+
+Latest release: [App v0.1.0](https://github.com/MuhammadBilalEllahi/Rust-Tauri-based-scheduling-app/releases/tag/app-v0.1.0)
+
+### Desktop installers
+
+- **Windows (.exe)**  
+  [Time.Accountability_0.1.0_x64-setup.exe](https://github.com/MuhammadBilalEllahi/Rust-Tauri-based-scheduling-app/releases/download/app-v0.1.0/Time.Accountability_0.1.0_x64-setup.exe)
+- **macOS Intel (.dmg)**  
+  [Time.Accountability_0.1.0_x64.dmg](https://github.com/MuhammadBilalEllahi/Rust-Tauri-based-scheduling-app/releases/download/app-v0.1.0/Time.Accountability_0.1.0_x64.dmg)
+- **macOS Apple Silicon (.dmg)**  
+  [Time.Accountability_0.1.0_aarch64.dmg](https://github.com/MuhammadBilalEllahi/Rust-Tauri-based-scheduling-app/releases/download/app-v0.1.0/Time.Accountability_0.1.0_aarch64.dmg)
+- **Linux AppImage (x64)**  
+  [Time.Accountability_0.1.0_amd64.AppImage](https://github.com/MuhammadBilalEllahi/Rust-Tauri-based-scheduling-app/releases/download/app-v0.1.0/Time.Accountability_0.1.0_amd64.AppImage)
+- **Linux AppImage (arm64)**  
+  [Time.Accountability_0.1.0_aarch64.AppImage](https://github.com/MuhammadBilalEllahi/Rust-Tauri-based-scheduling-app/releases/download/app-v0.1.0/Time.Accountability_0.1.0_aarch64.AppImage)
+- **Linux Debian package (x64)**  
+  [Time.Accountability_0.1.0_amd64.deb](https://github.com/MuhammadBilalEllahi/Rust-Tauri-based-scheduling-app/releases/download/app-v0.1.0/Time.Accountability_0.1.0_amd64.deb)
+- **Linux Debian package (arm64)**  
+  [Time.Accountability_0.1.0_arm64.deb](https://github.com/MuhammadBilalEllahi/Rust-Tauri-based-scheduling-app/releases/download/app-v0.1.0/Time.Accountability_0.1.0_arm64.deb)
+
 ## Screenshots
 
 ### Main Overview
